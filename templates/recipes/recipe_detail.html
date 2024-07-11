@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- bookmark -->
+<form method="post" action="/recipe/{{ recipe.id }}/bookmark" class="bookmark">
+  <input type="hidden" name="recipe_title" value="{{ recipe.title }}">
+  <button class="btn btn-lg">
+    {% if recipe.id in bookmarks %}
+    <i class="fa-solid fa-bookmark"></i> Remove from bookmark
+    {% else %}
+    <i class="fa-regular fa-bookmark"></i> bookmark
+    {% endif %}
+  </button>
+</form>
+
+<!-- recipe detail -->
+<div class="container mt-3">
+  <div class="row">
+    <div class="col-md-8 offset-md-2 text-center">
+      <h1>{{ recipe.title }}</h1>
+      <img src="{{ recipe.image }}" class="img-fluid my-4 d-block mx-auto" alt="{{ recipe.title }}">
+    </div>
+    <div class="col-md-8 offset-md-2">
+      <p class="lead">{{ recipe.summary|safe }}</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <h2>Ingredients for 1 servings</h2>
+      <div id="ingredient-container" class="row grid-view">
+        {% for ingredient in recipe.extendedIngredients %}
+        <div class="card ingredient-card text-center" style="width: 16rem;">
+          <img src="https://spoonacular.com/cdn/ingredients_100x100/{{ ingredient.image }}" class="card-img-top"
+            alt="{{ ingredient.name }}">
+          <div class="card-body">
+            <h5 class="card-title">{{ ingredient.name }}</h5>
+            <p class="card-text">{{ ingredient.measures.us.amount }}{{
+              ingredient.measures.us.unitShort }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Comments area -->
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <h2>Comments</h2>
+    {% if g.user %}
+    <form method="post" action="/recipe/{{ recipe.id }}">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.text(class="form-control", rows="3") }}
+        {% if form.text.errors %}
+        <div class="text-danger">
+          {% for error in form.text.errors %}
+          <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary">Post Comment</button>
+    </form>
+    {% else %}
+    <p><a href="/login">Log in</a> to post a comment.</p>
+    {% endif %}
+
+    <div class="mt-4">
+      {% for comment in comments %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">{{ comment.user.username }}</h5>
+          <p class="card-text">{{ comment.text }}</p>
+          <p class="card-text"><small class="text-muted">{{ comment.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+          </p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

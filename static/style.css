@@ -1,0 +1,83 @@
+body {
+  color: #313131;
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: bolder;
+}
+
+a {
+  text-decoration: none;
+  transition: all 0.4s;
+}
+
+a :hover {
+  color: #F58d17;
+}
+
+.banner-card {
+  background-image: url('/static/images/pexels-pixabay-301692.jpg');
+  background-repeat: no-repeat;
+  color: white;
+  background-position: center;
+  background-size: cover;
+  height: 500px;
+  display: grid;
+  grid-template-columns: 1fr;
+  place-content: center;
+  text-align: center;
+  padding-inline: 20px;
+  border-radius: 10px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f6f6f6;
+  width: 50vw;
+  margin: 0 auto;
+}
+
+.search-input {
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  color: #333333;
+  margin-left: 16px;
+  outline: none;
+  border: none;
+  background: none;
+  flex-grow: 1;
+}
+
+.form-control {
+  margin-bottom: 20px;
+}
+
+.ingredient-card {
+  border: none;
+}
+
+.ingredient-card .card-img-top {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.ingredient-card .card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.ingredient-card .card-title {
+  overflow-wrap: break-word;
+}

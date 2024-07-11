@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+<!-- search bar -->
+<form action="/search" class="my-4">
+  <div class="search">
+    <input name="q" class="search-input" placeholder="{{q}}">
+    <button class="btn btn-default"><i class="fa-solid fa-magnifying-glass"></i></button>
+  </div>
+</form>
+
+
+<!-- results for search -->
+<div class="container mt-4">
+  <div class="row d-flex">
+    {% for recipe in recipes %}
+    <div class="col-12 col-sm-8 col-md-6 col-lg-4 col-xl-3 mb-4 d-flex justify-content-center">
+      <div class="card h-100 shadow-sm" style="width: 18rem;">
+        <a href="/recipe/{{recipe.id}}">
+          <img src="{{recipe.image}}" class="card-img-top" alt="image{{recipe.id}}">
+        </a>
+        <div class="card-body">
+          <h5 class="card-title">{{recipe.title}}</h5>
+          <a href="/recipe/{{recipe.id}}">
+            <p class="card-text"><small>Click to see the full recipe.</small></p>
+          </a>
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<!-- pagination -->
+<nav>
+  <ul class="pagination justify-content-center">
+    {% if page > 1 %}
+    <li class="page-item">
+      <a class="page-link" href="/search?q={{ q }}&page={{ page - 1 }}" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+    {% endif %}
+
+    {% set start_page = 1 if page <= 3 else page - 2 %} {% set end_page=total_pages if page>= total_pages - 2 else page
+      + 2 %}
+      {% if start_page > 1 %}
+      <li class="page-item"><a class="page-link" href="/search?q={{ q }}&page=1">1</a></li>
+      {% if start_page > 2 %}
+      <li class="page-item"><span class="page-link">...</span></li>
+      {% endif %}
+      {% endif %}
+
+      {% for p in range(start_page, end_page + 1) %}
+      <li class="page-item {% if p == page %}active{% endif %}">
+        <a class="page-link" href="/search?q={{ q }}&page={{ p }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+
+      {% if end_page < total_pages %} {% if end_page < total_pages - 1 %} <li class="page-item"><span
+          class="page-link">...</span></li>
+        {% endif %}
+        <li class="page-item"><a class="page-link" href="/search?q={{ q }}&page={{ total_pages }}">{{ total_pages }}</a>
+        </li>
+        {% endif %}
+
+        {% if page < total_pages %} <li class="page-item">
+          <a class="page-link" href="/search?q={{ q }}&page={{ page + 1 }}" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+          </li>
+          {% endif %}
+  </ul>
+</nav>
+
+{% endblock %}
