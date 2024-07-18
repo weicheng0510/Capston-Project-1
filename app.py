@@ -24,15 +24,32 @@ API_KEY = os.environ.get('API_KEY')
 with app.app_context():
     db.create_all()
 
+
+##############################################################################
+# error handling for API requests
+
+def make_api_request(url, params=None):
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  
+        return response.json()
+    except requests.exceptions.RequestException:
+        return None
+
+
 ##############################################################################
 # Homepage and error pages
 
 @app.route('/')
 def homepage():
-    res = requests.get('https://api.spoonacular.com/recipes/random', params={'apiKey':API_KEY, 'number':4})
-    data = res.json()
-    return render_template('home.html', recipes = data)
-
+    url = 'https://api.spoonacular.com/recipes/random'
+    params = {'apiKey':API_KEY, 'number':4}
+    data = make_api_request(url, params)
+    if data:
+        return render_template('home.html', recipes = data)
+    else:
+        error_message = "Sorry, we couldn't fetch the recipes at this moment. Please try again later."
+        return render_template('error.html', error=error_message)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -138,38 +155,50 @@ def search_recipes():
     q = request.args.get('q')
     page = request.args.get('page',1, type=int)
     offset = (page - 1) * 10
-    res = requests.get('https://api.spoonacular.com/recipes/complexSearch', params={'apiKey':API_KEY, 'query':q, 'offset':offset, 'number':10})
-    data = res.json()
-    results = data['results']
-    total_pages = (data['totalResults'] + 9) // 10 
-    return render_template('/recipes/recipes.html', recipes = results, q = q, page = page, total_pages = total_pages)
+    url = 'https://api.spoonacular.com/recipes/complexSearch'
+    params = {'apiKey':API_KEY, 'query':q, 'offset':offset, 'number':10}
+    data = make_api_request(url, params)
+    if data:
+        results = data['results']
+        total_pages = (data['totalResults'] + 9) // 10 
+        return render_template('/recipes/recipes.html', recipes = results, q = q, page = page, total_pages = total_pages)
+    else:
+        error_message = "Sorry, we couldn't fetch the recipes at this moment. Please try again later."
+        return render_template('error.html', error=error_message)
 
 
 @app.route('/recipe/<int:id>', methods=['GET', 'POST'])
 def recipe_detail(id):
     """show recipe detail and handle comment posting"""
 
-    res = requests.get(f'https://api.spoonacular.com/recipes/{id}/information', params={'apiKey': API_KEY})
-    data = res.json()
+    url = f'https://api.spoonacular.com/recipes/{id}/information'
+    params = {'apiKey': API_KEY}
+    data = make_api_request(url, params)
+    if data:
+        form = CommentForm()
+        if form.validate_on_submit() and g.user:
+            text = form.text.data
+            recipe_title = data['title']
+            new_comment = Comment(recipe_id=id, recipe_title=recipe_title, user_id=g.user.id, text=text)
+            db.session.add(new_comment)
+            db.session.commit()
+            flash("Comment added.", "success")
+            return redirect(f'/recipe/{id}')
 
-    form = CommentForm()
+        comments = Comment.query.filter_by(recipe_id=id).order_by(Comment.timestamp.desc()).all()
 
-    if form.validate_on_submit() and g.user:
-        text = form.text.data
-        recipe_title = data['title']
-        new_comment = Comment(recipe_id=id, recipe_title=recipe_title, user_id=g.user.id, text=text)
-        db.session.add(new_comment)
-        db.session.commit()
-        flash("Comment added.", "success")
-        return redirect(f'/recipe/{id}')
-
-    comments = Comment.query.filter_by(recipe_id=id).order_by(Comment.timestamp.desc()).all()
-
-    if g.user:
-        bookmarks = [bookmark.recipe_id for bookmark in g.user.bookmarks]
-        return render_template('/recipes/recipe_detail.html', recipe=data, bookmarks=bookmarks, comments=comments, form=form)
+        if g.user:
+            bookmarks = [bookmark.recipe_id for bookmark in g.user.bookmarks]
+            return render_template('/recipes/recipe_detail.html', recipe=data, bookmarks=bookmarks, comments=comments, form=form)
+        
+        return render_template('/recipes/recipe_detail.html', recipe=data, comments=comments, form=form)
     
-    return render_template('/recipes/recipe_detail.html', recipe=data, comments=comments, form=form)
+    else:
+        error_message = "Sorry, we couldn't fetch the recipes at this moment. Please try again later."
+        return render_template('error.html', error=error_message)
+    
+    
+    
 
 
 @app.route('/recipe/<int:id>/bookmark', methods = ['POST'])
@@ -275,22 +304,25 @@ def edit_comment(id):
     form = CommentForm(obj=comment)
     recipe_id = comment.recipe_id
     
-    res = requests.get(f'https://api.spoonacular.com/recipes/{recipe_id}/information', params={'apiKey': API_KEY})
-    data = res.json()
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/login")
+    url = f'https://api.spoonacular.com/recipes/{recipe_id}/information'
+    params = {'apiKey': API_KEY}
+    data = make_api_request(url, params)
+    if data:
+        if not g.user:
+            flash("Access unauthorized.", "danger")
+            return redirect("/login")
     
-    if comment.user_id != g.user.id:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
+        if comment.user_id != g.user.id:
+            flash("Access unauthorized.", "danger")
+            return redirect("/")
+        
+        if form.validate_on_submit():
+            comment.text = form.text.data
+            db.session.commit()
+            return redirect(f'/user/{g.user.id}')
+            
+        return render_template('/users/comment_edit.html', recipe=data, form=form, comment = comment)
+    else:
+        error_message = "Sorry, we couldn't fetch the recipes at this moment. Please try again later."
+        return render_template('error.html', error=error_message)
     
-    if form.validate_on_submit():
-        comment.text = form.text.data
-        db.session.commit()
-        return redirect(f'/user/{g.user.id}')
-    
-    
-    return render_template('/users/comment_edit.html', recipe=data, form=form, comment = comment)
-
